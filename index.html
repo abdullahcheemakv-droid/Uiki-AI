@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080d19">
+
+<title>UIKI AI</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+:root{
+    --bg:#080d19;
+    --card:#111b2e;
+    --blue:#438cff;
+    --green:#00e6a0;
+    --text:#ffffff;
+    --muted:#91a0b8;
+}
+
+body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:Arial,sans-serif;
+    min-height:100vh;
+    overflow:hidden;
+}
+
+/* ANIMATED BACKGROUND */
+
+.background{
+    position:fixed;
+    inset:0;
+    z-index:-1;
+    background:
+    radial-gradient(circle at 10% 20%,#123b6570,transparent 40%),
+    radial-gradient(circle at 90% 80%,#006d5260,transparent 40%),
+    #080d19;
+    animation:bgmove 8s infinite alternate;
+}
+
+@keyframes bgmove{
+    from{filter:hue-rotate(0deg)}
+    to{filter:hue-rotate(25deg)}
+}
+
+/* LOGIN */
+
+#loginPage{
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:#080d19eF;
+    z-index:10;
+}
+
+.login-box{
+    width:100%;
+    max-width:390px;
+    padding:30px 24px;
+    border:1px solid #ffffff18;
+    border-radius:24px;
+    background:#111b2eeb;
+    box-shadow:0 20px 80px #0008;
+    text-align:center;
+}
+
+.logo{
+    width:65px;
+    height:65px;
+    border-radius:20px;
+    background:linear-gradient(135deg,#438cff,#00e6a0);
+    display:grid;
+    place-items:center;
+    margin:0 auto 15px;
+    font-size:27px;
+    font-weight:bold;
+    color:white;
+}
+
+.login-box h1{
+    font-size:29px;
+    margin-bottom:8px;
+}
+
+.login-box p{
+    color:var(--muted);
+    font-size:13px;
+    margin-bottom:25px;
+}
+
+input{
+    width:100%;
+    padding:15px;
+    border-radius:12px;
+    border:1px solid #ffffff20;
+    background:#080f20;
+    color:white;
+    outline:none;
+    margin-bottom:13px;
+    font-size:15px;
+}
+
+input:focus{
+    border-color:var(--blue);
+}
+
+button{
+    cursor:pointer;
+    border:none;
+    font-weight:bold;
+}
+
+.primary{
+    width:100%;
+    padding:15px;
+    border-radius:12px;
+    background:linear-gradient(110deg,#438cff,#00cda0);
+    color:white;
+    font-size:15px;
+    margin-top:8px;
+}
+
+.switch{
+    margin-top:20px;
+    color:var(--green);
+    cursor:pointer;
+    font-size:13px;
+}
+
+/* MAIN APP */
+
+#app{
+    display:none;
+    height:100dvh;
+}
+
+.sidebar{
+    position:fixed;
+    top:0;
+    left:0;
+    bottom:0;
+    width:250px;
+    background:#0d1628;
+    border-right:1px solid #ffffff12;
+    padding:20px;
+    z-index:5;
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    font-size:21px;
+    font-weight:bold;
+    margin-bottom:35px;
+}
+
+.brand-icon{
+    width:40px;
+    height:40px;
+    border-radius:13px;
+    background:linear-gradient(135deg,#438cff,#00e6a0);
+    display:grid;
+    place-items:center;
+}
+
+.new-chat{
+    width:100%;
+    padding:14px;
+    background:#192943;
+    border:1px solid #ffffff20;
+    color:white;
+    border-radius:12px;
+    margin-bottom:25px;
+}
+
+.side-title{
+    color:#72829d;
+    font-size:11px;
+    margin-bottom:12px;
+}
+
+.history{
+    overflow-y:auto;
+    max-height:60%;
+}
+
+.history-item{
+    padding:12px;
+    border-radius:10px;
+    color:#b8c5d9;
+    font-size:13px;
+    cursor:pointer;
+    margin-bottom:5px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.history-item:hover{
+    background:#192943;
+}
+
+.sidebar-bottom{
+    position:absolute;
+    bottom:20px;
+    left:20px;
+    right:20px;
+}
+
+.sidebar-bottom button{
+    width:100%;
+    padding:13px;
+    background:#192943;
+    color:white;
+    border-radius:10px;
+}
+
+/* MAIN */
+
+.main{
+    margin-left:250px;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+}
+
+.topbar{
+    height:65px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 25px;
+    border-bottom:1px solid #ffffff12;
+    background:#080d19b8;
+}
+
+.topbar h3{
+    font-size:17px;
+}
+
+.status{
+    font-size:12px;
+    color:var(--green);
+}
+
+.menu-btn{
+    display:none;
+    color:white;
+    background:transparent;
+    font-size:23px;
+}
+
+/* CHAT */
+
+.chat-area{
+    flex:1;
+    overflow-y:auto;
+    padding:25px 15px 20px;
+    scroll-behavior:smooth;
+}
+
+.welcome{
+    text-align:center;
+    margin:12vh auto 40px;
+    max-width:500px;
+}
+
+.welcome-logo{
+    width:75px;
+    height:75px;
+    display:grid;
+    place-items:center;
+    margin:0 auto 20px;
+    border-radius:25px;
+    font-size:32px;
+    background:linear-gradient(135deg,#438cff,#00e6a0);
+}
+
+.welcome h1{
+    font-size:30px;
+    margin-bottom:12px;
+}
+
+.welcome p{
+    color:var(--muted);
+    font-size:14px;
+    line-height:1.7;
+}
+
+.suggestions{
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:25px;
+}
+
+.suggestions button{
+    background:#14223a;
+    border:1px solid #ffffff18;
+    color:#dce8f9;
+    border-radius:20px;
+    padding:11px 14px;
+    font-size:12px;
+}
+
+/* MESSAGES */
+
+.message{
+    display:flex;
+    gap:12px;
+    max-width:800px;
+    margin:20px auto;
+    line-height:1.7;
+}
+
+.avatar{
+    min-width:35px;
+    height:35px;
+    border-radius:12px;
+    display:grid;
+    place-items:center;
+    background:#1d3555;
+    font-size:15px;
+}
+
+.message-content{
+    padding:13px 16px;
+    background:#111c30;
+    border:1px solid #ffffff10;
+    border-radius:5px 15px 15px 15px;
+    max-width:90%;
+    overflow-wrap:anywhere;
+    font-size:14px;
+    white-space:pre-wrap;
+}
+
+.user .avatar{
+    background:#075c4b;
+}
+
+.user .message-content{
+    background:#132d35;
+}
+
+.message.user{
+    flex-direction:row-reverse;
+}
+
+/* INPUT */
+
+.input-section{
+    padding:15px;
+    background:linear-gradient(transparent,#080d19 25%);
+}
+
+.input-box{
+    max-width:800px;
+    margin:auto;
+    background:#142039;
+    border:1px solid #ffffff20;
+    border-radius:17px;
+    display:flex;
+    align-items:center;
+    padding:8px;
+    gap:8px;
+}
+
+.input-box textarea{
+    flex:1;
+    background:transparent;
+    color:white;
+    border:none;
+    outline:none;
+    resize:none;
+    padding:12px;
+    font-family:Arial;
+    font-size:14px;
+    max-height:120px;
+}
+
+.input-box button{
+    width:42px;
+    height:42px;
+    border-radius:12px;
+    background:#223754;
+    color:white;
+    font-size:18px;
+}
+
+.input-box .send{
+    background:linear-gradient(135deg,#438cff,#00cda0);
+}
+
+.disclaimer{
+    text-align:center;
+    font-size:10px;
+    color:#65758f;
+    margin-top:10px;
+}
+
+/* MOBILE */
+
+@media(max-width:700px){
+
+    .sidebar{
+        transform:translateX(-100%);
+        transition:.3s;
+        width:270px;
+    }
+
+    .sidebar.open{
+        transform:translateX(0);
+    }
+
+    .main{
+        margin-left:0;
+    }
+
+    .menu-btn{
+        display:block;
+    }
+
+    .topbar{
+        padding:0 15px;
+    }
+
+    .welcome{
+        margin-top:10vh;
+    }
+
+    .welcome h1{
+        font-size:25px;
+    }
+
+    .chat-area{
+        padding:15px 10px;
+    }
+
+    .message-content{
+        font-size:13px;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="background"></div>
+
+<!-- LOGIN PAGE -->
+
+<div id="loginPage">
+
+<div class="login-box">
+
+<div class="logo">U</div>
+
+<h1>UIKI AI</h1>
+
+<p>Your Personal AI Assistant</p>
+
+<input id="username"
+placeholder="Enter your name"
+autocomplete="name">
+
+<input id="email"
+type="email"
+placeholder="Email address"
+autocomplete="email">
+
+<input id="password"
+type="password"
+placeholder="Password"
+autocomplete="current-password">
+
+<button class="primary" onclick="login()">
+Continue to UIKI AI
+</button>
+
+<div class="switch" onclick="toggleMode()" id="switchText">
+Create a new account
+</div>
+
+<p style="margin-top:20px;font-size:10px">
+Demo login only. Real accounts require secure authentication.
+</p>
+
+</div>
+</div>
+
+<!-- MAIN APPLICATION -->
+
+<div id="app">
+
+<aside class="sidebar" id="sidebar">
+
+<div class="brand">
+<div class="brand-icon">U</div>
+UIKI AI
+</div>
+
+<button class="new-chat" onclick="newChat()">
+＋ New Chat
+</button>
+
+<div class="side-title">CHAT HISTORY</div>
+
+<div class="history" id="history"></div>
+
+<div class="sidebar-bottom">
+
+<button onclick="logout()">Logout ↗</button>
+
+</div>
+
+</aside>
+
+<main class="main">
+
+<header class="topbar">
+
+<div style="display:flex;gap:15px;align-items:center">
+
+<button class="menu-btn" onclick="toggleSidebar()">☰</button>
+
+<h3>UIKI AI</h3>
+
+</div>
+
+<div class="status">● AI Assistant</div>
+
+</header>
+
+<section class="chat-area" id="chatArea">
+
+<div class="welcome" id="welcome">
+
+<div class="welcome-logo">U</div>
+
+<h1>How can I help you?</h1>
+
+<p>
+Welcome to UIKI AI. Your personal assistant
+for knowledge, coding, technology and creativity.
+</p>
+
+<div class="suggestions">
+
+<button onclick="suggest('Explain HTML in Roman Urdu')">
+Learn Coding
+</button>
+
+<button onclick="suggest('Explain cybersecurity basics')">
+Cybersecurity
+</button>
+
+<button onclick="suggest('Help me build an Android app')">
+Build an App
+</button>
+
+<button onclick="suggest('Tell me about artificial intelligence')">
+Explore AI
+</button>
+
+</div>
+
+</div>
+
+</section>
+
+<div class="input-section">
+
+<div class="input-box">
+
+<textarea
+id="prompt"
+placeholder="Message UIKI AI..."
+rows="1"
+onkeydown="handleEnter(event)"
+></textarea>
+
+<button onclick="voiceInput()" title="Voice Input">🎤</button>
+
+<button class="send" onclick="sendMessage()">➤</button>
+
+</div>
+
+<div class="disclaimer">
+UIKI AI can make mistakes. Verify important information.
+</div>
+
+</div>
+
+</main>
+
+</div>
+
+<script>
+
+/* SETTINGS */
+
+const API_URL = "/api/chat";
+
+let isSignup = false;
+let currentChat = [];
+let chats = JSON.parse(
+localStorage.getItem("uiki_chats") || "[]"
+);
+
+/* LOGIN */
+
+function toggleMode(){
+
+isSignup = !isSignup;
+
+document.getElementById("switchText").innerText =
+isSignup ? "Already have an account? Login" :
+"Create a new account";
+
+document.querySelector(".primary").innerText =
+isSignup ? "Create Account" : "Continue to UIKI AI";
+
+}
+
+function login(){
+
+const name = document.getElementById("username").value.trim();
+const email = document.getElementById("email").value.trim();
+const password = document.getElementById("password").value;
+
+if(!name || !email || password.length < 8){
+
+alert("Name, email aur kam az kam 8 characters ka password enter karo.");
+
+return;
+
+}
+
+if(isSignup){
+
+const users = JSON.parse(
+localStorage.getItem("uiki_users") || "{}"
+);
+
+if(users[email]){
+alert("Account already exists.");
+return;
+}
+
+users[email]
