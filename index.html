@@ -28,11 +28,11 @@ body{
     background:var(--bg);
     color:var(--text);
     font-family:Arial,sans-serif;
-    min-height:100vh;
+    height:100dvh;
     overflow:hidden;
 }
 
-/* ANIMATED BACKGROUND */
+/* BACKGROUND */
 
 .background{
     position:fixed;
@@ -50,6 +50,14 @@ body{
     to{filter:hue-rotate(25deg)}
 }
 
+/* BUTTONS */
+
+button{
+    cursor:pointer;
+    border:none;
+    font-weight:bold;
+}
+
 /* LOGIN */
 
 #loginPage{
@@ -59,7 +67,7 @@ body{
     align-items:center;
     justify-content:center;
     padding:20px;
-    background:#080d19eF;
+    background:#080d19ed;
     z-index:10;
 }
 
@@ -84,7 +92,6 @@ body{
     margin:0 auto 15px;
     font-size:27px;
     font-weight:bold;
-    color:white;
 }
 
 .login-box h1{
@@ -98,7 +105,7 @@ body{
     margin-bottom:25px;
 }
 
-input{
+.login-box input{
     width:100%;
     padding:15px;
     border-radius:12px;
@@ -110,14 +117,8 @@ input{
     font-size:15px;
 }
 
-input:focus{
+.login-box input:focus{
     border-color:var(--blue);
-}
-
-button{
-    cursor:pointer;
-    border:none;
-    font-weight:bold;
 }
 
 .primary{
@@ -137,12 +138,14 @@ button{
     font-size:13px;
 }
 
-/* MAIN APP */
+/* APP */
 
 #app{
     display:none;
     height:100dvh;
 }
+
+/* SIDEBAR */
 
 .sidebar{
     position:fixed;
@@ -154,6 +157,7 @@ button{
     border-right:1px solid #ffffff12;
     padding:20px;
     z-index:5;
+    transition:.3s;
 }
 
 .brand{
@@ -207,8 +211,10 @@ button{
     text-overflow:ellipsis;
 }
 
-.history-item:hover{
+.history-item:hover,
+.history-item.active{
     background:#192943;
+    color:white;
 }
 
 .sidebar-bottom{
@@ -236,7 +242,7 @@ button{
 }
 
 .topbar{
-    height:65px;
+    min-height:65px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -261,7 +267,7 @@ button{
     font-size:23px;
 }
 
-/* CHAT */
+/* CHAT AREA */
 
 .chat-area{
     flex:1;
@@ -391,7 +397,7 @@ button{
 }
 
 .input-box button{
-    width:42px;
+    min-width:42px;
     height:42px;
     border-radius:12px;
     background:#223754;
@@ -401,6 +407,10 @@ button{
 
 .input-box .send{
     background:linear-gradient(135deg,#438cff,#00cda0);
+}
+
+.input-box button:disabled{
+    opacity:.5;
 }
 
 .disclaimer{
@@ -416,7 +426,6 @@ button{
 
     .sidebar{
         transform:translateX(-100%);
-        transition:.3s;
         width:270px;
     }
 
@@ -461,7 +470,7 @@ button{
 
 <div class="background"></div>
 
-<!-- LOGIN PAGE -->
+<!-- LOGIN -->
 
 <div id="loginPage">
 
@@ -473,22 +482,29 @@ button{
 
 <p>Your Personal AI Assistant</p>
 
-<input id="username"
+<input
+id="username"
 placeholder="Enter your name"
-autocomplete="name">
+autocomplete="name"
+style="display:none"
+>
 
-<input id="email"
+<input
+id="email"
 type="email"
 placeholder="Email address"
-autocomplete="email">
+autocomplete="email"
+>
 
-<input id="password"
+<input
+id="password"
 type="password"
 placeholder="Password"
-autocomplete="current-password">
+autocomplete="current-password"
+>
 
-<button class="primary" onclick="login()">
-Continue to UIKI AI
+<button class="primary" id="loginButton" onclick="login()">
+Login to UIKI AI
 </button>
 
 <div class="switch" onclick="toggleMode()" id="switchText">
@@ -496,13 +512,13 @@ Create a new account
 </div>
 
 <p style="margin-top:20px;font-size:10px">
-Demo login only. Real accounts require secure authentication.
+Local demo account. Not suitable for real credentials.
 </p>
 
 </div>
 </div>
 
-<!-- MAIN APPLICATION -->
+<!-- APP -->
 
 <div id="app">
 
@@ -522,9 +538,7 @@ UIKI AI
 <div class="history" id="history"></div>
 
 <div class="sidebar-bottom">
-
 <button onclick="logout()">Logout ↗</button>
-
 </div>
 
 </aside>
@@ -541,7 +555,7 @@ UIKI AI
 
 </div>
 
-<div class="status">● AI Assistant</div>
+<div class="status">● Assistant</div>
 
 </header>
 
@@ -595,7 +609,7 @@ onkeydown="handleEnter(event)"
 
 <button onclick="voiceInput()" title="Voice Input">🎤</button>
 
-<button class="send" onclick="sendMessage()">➤</button>
+<button class="send" id="sendButton" onclick="sendMessage()">➤</button>
 
 </div>
 
@@ -606,96 +620,153 @@ UIKI AI can make mistakes. Verify important information.
 </div>
 
 </main>
-
 </div>
 
 <script>
 
-/* SETTINGS */
+/* CONFIGURATION */
 
 const API_URL = "/api/chat";
 
 let isSignup = false;
 let currentChat = [];
-let chats = JSON.parse(
-localStorage.getItem("uiki_chats") || "[]"
-);
+let currentChatId = null;
+let chats = [];
 
-/* LOGIN */
+try{
+    const saved = JSON.parse(localStorage.getItem("uiki_chats") || "[]");
+    chats = Array.isArray(saved) ? saved : [];
+}catch(e){
+    chats = [];
+}
+
+/* LOGIN MODE */
 
 function toggleMode(){
 
-isSignup = !isSignup;
+    isSignup = !isSignup;
 
-document.getElementById("switchText").innerText =
-isSignup ? "Already have an account? Login" :
-"Create a new account";
+    document.getElementById("username").style.display =
+        isSignup ? "block" : "none";
 
-document.querySelector(".primary").innerText =
-isSignup ? "Create Account" : "Continue to UIKI AI";
+    document.getElementById("switchText").textContent =
+        isSignup ? "Already have an account? Login" :
+        "Create a new account";
+
+    document.getElementById("loginButton").textContent =
+        isSignup ? "Create Account" : "Login to UIKI AI";
 
 }
+
+/* LOGIN */
 
 function login(){
 
-const name = document.getElementById("username").value.trim();
-const email = document.getElementById("email").value.trim();
-const password = document.getElementById("password").value;
+    const name = document.getElementById("username").value.trim();
 
-if(!name || !email || password.length < 8){
+    const email = document.getElementById("email").value.trim().toLowerCase();
 
-alert("Name, email aur kam az kam 8 characters ka password enter karo.");
+    const password = document.getElementById("password").value;
 
-return;
+    if(!email || !password){
+        alert("Email aur password enter karo.");
+        return;
+    }
+
+    if(!email.includes("@")){
+        alert("Valid email enter karo.");
+        return;
+    }
+
+    if(password.length < 8){
+        alert("Password kam az kam 8 characters ka hona chahiye.");
+        return;
+    }
+
+    try{
+
+        let users = JSON.parse(
+            localStorage.getItem("uiki_users") || "{}"
+        );
+
+        if(isSignup){
+
+            if(!name){
+                alert("Apna name enter karo.");
+                return;
+            }
+
+            if(users[email]){
+                alert("Account already exists. Login karo.");
+                return;
+            }
+
+            users[email] = {
+                name:name,
+                password:password
+            };
+
+            localStorage.setItem(
+                "uiki_users",
+                JSON.stringify(users)
+            );
+
+        }else{
+
+            if(!users[email]){
+                alert("Account nahi mila. Pehle Signup karo.");
+                return;
+            }
+
+            if(users[email].password !== password){
+                alert("Incorrect password.");
+                return;
+            }
+
+        }
+
+        localStorage.setItem("uiki_session",email);
+
+        document.getElementById("password").value = "";
+
+        startApp();
+
+    }catch(error){
+
+        alert("Login error: " + error.message);
+
+    }
 
 }
 
-if(isSignup){
-
-const users = JSON.parse(
-localStorage.getItem("uiki_users") || "{}"
-);
-
-if(users[email]){
-alert("Account already exists.");
-return;
-}
-
-users[email] = {name,password};
-
-localStorage.setItem("uiki_users",JSON.stringify(users));
-
-}else{
-
-const users = JSON.parse(
-localStorage.getItem("uiki_users") || "{}"
-);
-
-if(!users[email] || users[email].password !== password){
-
-alert("Account nahi mila. Pehle signup karo.");
-return;
-
-}
-
-}
-
-localStorage.setItem("uiki_session",email);
-
-startApp();
-
-}
-
-/* START */
+/* START APP */
 
 function startApp(){
 
-if(!localStorage.getItem("uiki_session"))return;
+    const session = localStorage.getItem("uiki_session");
 
-document.getElementById("loginPage").style.display="none";
-document.getElementById("app").style.display="block";
+    if(!session){
 
-loadHistory();
+        document.getElementById("loginPage").style.display = "flex";
+
+        document.getElementById("app").style.display = "none";
+
+        return;
+    }
+
+    document.getElementById("loginPage").style.display = "none";
+
+    document.getElementById("app").style.display = "flex";
+
+    loadHistory();
+
+    const savedId = localStorage.getItem("active_chat");
+
+    if(savedId && chats.some(c => c.id === savedId)){
+        openChat(savedId);
+    }else{
+        newChat();
+    }
 
 }
 
@@ -703,61 +774,93 @@ loadHistory();
 
 function logout(){
 
-localStorage.removeItem("uiki_session");
+    localStorage.removeItem("uiki_session");
 
-location.reload();
+    localStorage.removeItem("active_chat");
+
+    location.reload();
 
 }
 
-/* CHAT */
+/* NEW CHAT */
 
 function newChat(){
 
-currentChat=[];
+    currentChat = [];
 
-document.getElementById("chatArea").innerHTML=`
-<div class="welcome" id="welcome">
+    currentChatId = null;
 
-<div class="welcome-logo">U</div>
+    localStorage.removeItem("active_chat");
 
-<h1>How can I help you?</h1>
+    document.getElementById("chatArea").innerHTML = `
+        <div class="welcome" id="welcome">
 
-<p>Your personal AI assistant is ready.</p>
+            <div class="welcome-logo">U</div>
 
-</div>`;
+            <h1>How can I help you?</h1>
 
-document.getElementById("sidebar").classList.remove("open");
+            <p>Your personal AI assistant is ready.</p>
+
+            <div class="suggestions">
+
+                <button onclick="suggest('Explain HTML in Roman Urdu')">
+                Learn Coding
+                </button>
+
+                <button onclick="suggest('Explain cybersecurity basics')">
+                Cybersecurity
+                </button>
+
+                <button onclick="suggest('Help me build an Android app')">
+                Build an App
+                </button>
+
+            </div>
+
+        </div>
+    `;
+
+    document.getElementById("sidebar").classList.remove("open");
+
+    loadHistory();
 
 }
 
-/* MESSAGE DISPLAY */
+/* ADD MESSAGE */
 
 function addMessage(text,type){
 
-const welcome=document.getElementById("welcome");
+    const welcome = document.getElementById("welcome");
 
-if(welcome)welcome.remove();
+    if(welcome) welcome.remove();
 
-const area=document.getElementById("chatArea");
+    const area = document.getElementById("chatArea");
 
-const message=document.createElement("div");
+    const message = document.createElement("div");
 
-message.className="message "+type;
+    message.className = "message " + type;
 
-const avatar=document.createElement("div");
-avatar.className="avatar";
-avatar.textContent=type==="user"?"Y":"U";
+    const avatar = document.createElement("div");
 
-const content=document.createElement("div");
-content.className="message-content";
-content.textContent=text;
+    avatar.className = "avatar";
 
-message.appendChild(avatar);
-message.appendChild(content);
+    avatar.textContent = type === "user" ? "Y" : "U";
 
-area.appendChild(message);
+    const content = document.createElement("div");
 
-area.scrollTop=area.scrollHeight;
+    content.className = "message-content";
+
+    content.textContent = text;
+
+    message.appendChild(avatar);
+
+    message.appendChild(content);
+
+    area.appendChild(message);
+
+    area.scrollTop = area.scrollHeight;
+
+    return message;
 
 }
 
@@ -765,84 +868,88 @@ area.scrollTop=area.scrollHeight;
 
 async function sendMessage(){
 
-const input=document.getElementById("prompt");
+    const input = document.getElementById("prompt");
 
-const text=input.value.trim();
+    const sendButton = document.getElementById("sendButton");
 
-if(!text)return;
+    const text = input.value.trim();
 
-input.value="";
+    if(!text) return;
 
-addMessage(text,"user");
+    if(sendButton.disabled) return;
 
-currentChat.push({
-role:"user",
-content:text
-});
+    input.value = "";
 
-saveCurrentChat();
+    addMessage(text,"user");
 
-const loading=document.createElement("div");
+    currentChat.push({
+        role:"user",
+        content:text
+    });
 
-loading.className="message";
-loading.innerHTML=`
-<div class="avatar">U</div>
-<div class="message-content">UIKI AI is thinking...</div>
-`;
+    saveCurrentChat();
 
-document.getElementById("chatArea").appendChild(loading);
+    sendButton.disabled = true;
 
-try{
+    const loading = addMessage("UIKI AI is thinking...","ai");
 
-const response=await fetch(API_URL,{
+    try{
 
-method:"POST",
+        const response = await fetch(API_URL,{
 
-headers:{
-"Content-Type":"application/json"
-},
+            method:"POST",
 
-body:JSON.stringify({
+            headers:{
+                "Content-Type":"application/json"
+            },
 
-message:text,
+            body:JSON.stringify({
 
-history:currentChat.slice(-12),
+                message:text,
 
-user:localStorage.getItem("uiki_session")
+                history:currentChat.slice(-12),
 
-})
+                user:localStorage.getItem("uiki_session")
 
-});
+            })
 
-if(!response.ok){
-throw new Error("AI server error: "+response.status);
-}
+        });
 
-const data=await response.json();
+        if(!response.ok){
 
-loading.remove();
+            throw new Error("Server error: " + response.status);
 
-const answer=data.reply || "AI response nahi mila.";
+        }
 
-addMessage(answer,"ai");
+        const data = await response.json();
 
-currentChat.push({
-role:"assistant",
-content:answer
-});
+        if(!data.reply){
 
-saveCurrentChat();
+            throw new Error("AI response missing.");
 
-}catch(error){
+        }
 
-loading.remove();
+        loading.querySelector(".message-content").textContent = data.reply;
 
-addMessage(
-"AI server se connection nahi ho saka. Backend configure karo. Error: "+error.message,
-"ai"
-);
+        currentChat.push({
+            role:"assistant",
+            content:data.reply
+        });
 
-}
+        saveCurrentChat();
+
+    }catch(error){
+
+        loading.querySelector(".message-content").textContent =
+            "AI server connect nahi ho saka. Backend abhi configure nahi hai. Error: " + error.message;
+
+    }finally{
+
+        sendButton.disabled = false;
+
+        input.focus();
+
+    }
 
 }
 
@@ -850,23 +957,23 @@ addMessage(
 
 function suggest(text){
 
-document.getElementById("prompt").value=text;
+    document.getElementById("prompt").value = text;
 
-sendMessage();
+    sendMessage();
 
 }
 
-/* ENTER */
+/* ENTER KEY */
 
 function handleEnter(event){
 
-if(event.key==="Enter" && !event.shiftKey){
+    if(event.key === "Enter" && !event.shiftKey){
 
-event.preventDefault();
+        event.preventDefault();
 
-sendMessage();
+        sendMessage();
 
-}
+    }
 
 }
 
@@ -874,67 +981,77 @@ sendMessage();
 
 function saveCurrentChat(){
 
-if(currentChat.length===0)return;
+    if(currentChat.length === 0) return;
 
-let id=localStorage.getItem("active_chat");
+    if(!currentChatId){
 
-if(!id){
+        currentChatId = Date.now().toString();
 
-id=Date.now().toString();
+        localStorage.setItem("active_chat",currentChatId);
 
-localStorage.setItem("active_chat",id);
+    }
+
+    const chat = {
+
+        id:currentChatId,
+
+        title:currentChat[0].content.substring(0,35),
+
+        messages:currentChat
+
+    };
+
+    const index = chats.findIndex(c => c.id === currentChatId);
+
+    if(index >= 0){
+
+        chats[index] = chat;
+
+    }else{
+
+        chats.unshift(chat);
+
+    }
+
+    try{
+
+        localStorage.setItem("uiki_chats",JSON.stringify(chats));
+
+        loadHistory();
+
+    }catch(error){
+
+        alert("Storage full. Apne chats ka backup bana lo.");
+
+    }
 
 }
 
-const index=chats.findIndex(c=>c.id===id);
-
-const chat={
-id,
-title:currentChat[0].content.substring(0,35),
-messages:currentChat
-};
-
-if(index>=0){
-chats[index]=chat;
-}else{
-chats.unshift(chat);
-}
-
-try{
-
-localStorage.setItem("uiki_chats",JSON.stringify(chats));
-
-}catch(e){
-
-alert("Storage full. Chat backup zaroori hai.");
-
-}
-
-loadHistory();
-
-}
-
-/* HISTORY */
+/* LOAD HISTORY */
 
 function loadHistory(){
 
-const history=document.getElementById("history");
+    const history = document.getElementById("history");
 
-history.innerHTML="";
+    history.innerHTML = "";
 
-chats.forEach(chat=>{
+    chats.forEach(chat => {
 
-const item=document.createElement("div");
+        const item = document.createElement("div");
 
-item.className="history-item";
+        item.className = "history-item";
 
-item.textContent="💬 "+chat.title;
+        if(chat.id === currentChatId){
+            item.classList.add("active");
+        }
 
-item.onclick=()=>openChat(chat.id);
+        item.textContent = "💬 " + chat.title;
 
-history.appendChild(item);
+        item.onclick = () => openChat(chat.id);
 
-});
+        history.appendChild(item);
+
+    });
 
 }
 
@@ -942,28 +1059,32 @@ history.appendChild(item);
 
 function openChat(id){
 
-const chat=chats.find(c=>c.id===id);
+    const chat = chats.find(c => c.id === id);
 
-if(!chat)return;
+    if(!chat) return;
 
-currentChat=chat.messages;
+    currentChatId = id;
 
-localStorage.setItem("active_chat",id);
+    currentChat = [...chat.messages];
 
-const area=document.getElementById("chatArea");
+    localStorage.setItem("active_chat",id);
 
-area.innerHTML="";
+    const area = document.getElementById("chatArea");
 
-currentChat.forEach(message=>{
+    area.innerHTML = "";
 
-addMessage(
-message.content,
-message.role==="user"?"user":"ai"
-);
+    currentChat.forEach(message => {
 
-});
+        addMessage(
+            message.content,
+            message.role === "user" ? "user" : "ai"
+        );
 
-document.getElementById("sidebar").classList.remove("open");
+    });
+
+    document.getElementById("sidebar").classList.remove("open");
+
+    loadHistory();
 
 }
 
@@ -971,7 +1092,7 @@ document.getElementById("sidebar").classList.remove("open");
 
 function toggleSidebar(){
 
-document.getElementById("sidebar").classList.toggle("open");
+    document.getElementById("sidebar").classList.toggle("open");
 
 }
 
@@ -979,40 +1100,48 @@ document.getElementById("sidebar").classList.toggle("open");
 
 function voiceInput(){
 
-const SpeechRecognition =
-window.SpeechRecognition ||
-window.webkitSpeechRecognition;
+    const SpeechRecognition =
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition;
 
-if(!SpeechRecognition){
+    if(!SpeechRecognition){
 
-alert("Voice input is not supported in this browser.");
+        alert("Voice input is not supported in this browser.");
 
-return;
+        return;
 
-}
+    }
 
-const recognition=new SpeechRecognition();
+    const recognition = new SpeechRecognition();
 
-recognition.lang="ur-PK";
+    recognition.lang = "ur-PK";
 
-recognition.onresult=function(event){
+    recognition.interimResults = false;
 
-document.getElementById("prompt").value=
-event.results[0][0].transcript;
+    recognition.onresult = function(event){
 
-};
+        document.getElementById("prompt").value =
+            event.results[0][0].transcript;
 
-recognition.start();
+    };
+
+    recognition.onerror = function(){
+
+        alert("Voice recognition error. Microphone permission check karo.");
+
+    };
+
+    recognition.start();
 
 }
 
 /* AUTO START */
 
-window.onload=function(){
+window.addEventListener("load",function(){
 
-startApp();
+    startApp();
 
-};
+});
 
 </script>
 
