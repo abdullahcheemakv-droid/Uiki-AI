@@ -661,4 +661,360 @@ alert("Account already exists.");
 return;
 }
 
-users[email]
+users[email] = {name,password};
+
+localStorage.setItem("uiki_users",JSON.stringify(users));
+
+}else{
+
+const users = JSON.parse(
+localStorage.getItem("uiki_users") || "{}"
+);
+
+if(!users[email] || users[email].password !== password){
+
+alert("Account nahi mila. Pehle signup karo.");
+return;
+
+}
+
+}
+
+localStorage.setItem("uiki_session",email);
+
+startApp();
+
+}
+
+/* START */
+
+function startApp(){
+
+if(!localStorage.getItem("uiki_session"))return;
+
+document.getElementById("loginPage").style.display="none";
+document.getElementById("app").style.display="block";
+
+loadHistory();
+
+}
+
+/* LOGOUT */
+
+function logout(){
+
+localStorage.removeItem("uiki_session");
+
+location.reload();
+
+}
+
+/* CHAT */
+
+function newChat(){
+
+currentChat=[];
+
+document.getElementById("chatArea").innerHTML=`
+<div class="welcome" id="welcome">
+
+<div class="welcome-logo">U</div>
+
+<h1>How can I help you?</h1>
+
+<p>Your personal AI assistant is ready.</p>
+
+</div>`;
+
+document.getElementById("sidebar").classList.remove("open");
+
+}
+
+/* MESSAGE DISPLAY */
+
+function addMessage(text,type){
+
+const welcome=document.getElementById("welcome");
+
+if(welcome)welcome.remove();
+
+const area=document.getElementById("chatArea");
+
+const message=document.createElement("div");
+
+message.className="message "+type;
+
+const avatar=document.createElement("div");
+avatar.className="avatar";
+avatar.textContent=type==="user"?"Y":"U";
+
+const content=document.createElement("div");
+content.className="message-content";
+content.textContent=text;
+
+message.appendChild(avatar);
+message.appendChild(content);
+
+area.appendChild(message);
+
+area.scrollTop=area.scrollHeight;
+
+}
+
+/* SEND MESSAGE */
+
+async function sendMessage(){
+
+const input=document.getElementById("prompt");
+
+const text=input.value.trim();
+
+if(!text)return;
+
+input.value="";
+
+addMessage(text,"user");
+
+currentChat.push({
+role:"user",
+content:text
+});
+
+saveCurrentChat();
+
+const loading=document.createElement("div");
+
+loading.className="message";
+loading.innerHTML=`
+<div class="avatar">U</div>
+<div class="message-content">UIKI AI is thinking...</div>
+`;
+
+document.getElementById("chatArea").appendChild(loading);
+
+try{
+
+const response=await fetch(API_URL,{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+message:text,
+
+history:currentChat.slice(-12),
+
+user:localStorage.getItem("uiki_session")
+
+})
+
+});
+
+if(!response.ok){
+throw new Error("AI server error: "+response.status);
+}
+
+const data=await response.json();
+
+loading.remove();
+
+const answer=data.reply || "AI response nahi mila.";
+
+addMessage(answer,"ai");
+
+currentChat.push({
+role:"assistant",
+content:answer
+});
+
+saveCurrentChat();
+
+}catch(error){
+
+loading.remove();
+
+addMessage(
+"AI server se connection nahi ho saka. Backend configure karo. Error: "+error.message,
+"ai"
+);
+
+}
+
+}
+
+/* SUGGESTIONS */
+
+function suggest(text){
+
+document.getElementById("prompt").value=text;
+
+sendMessage();
+
+}
+
+/* ENTER */
+
+function handleEnter(event){
+
+if(event.key==="Enter" && !event.shiftKey){
+
+event.preventDefault();
+
+sendMessage();
+
+}
+
+}
+
+/* SAVE CHAT */
+
+function saveCurrentChat(){
+
+if(currentChat.length===0)return;
+
+let id=localStorage.getItem("active_chat");
+
+if(!id){
+
+id=Date.now().toString();
+
+localStorage.setItem("active_chat",id);
+
+}
+
+const index=chats.findIndex(c=>c.id===id);
+
+const chat={
+id,
+title:currentChat[0].content.substring(0,35),
+messages:currentChat
+};
+
+if(index>=0){
+chats[index]=chat;
+}else{
+chats.unshift(chat);
+}
+
+try{
+
+localStorage.setItem("uiki_chats",JSON.stringify(chats));
+
+}catch(e){
+
+alert("Storage full. Chat backup zaroori hai.");
+
+}
+
+loadHistory();
+
+}
+
+/* HISTORY */
+
+function loadHistory(){
+
+const history=document.getElementById("history");
+
+history.innerHTML="";
+
+chats.forEach(chat=>{
+
+const item=document.createElement("div");
+
+item.className="history-item";
+
+item.textContent="💬 "+chat.title;
+
+item.onclick=()=>openChat(chat.id);
+
+history.appendChild(item);
+
+});
+
+}
+
+/* OPEN CHAT */
+
+function openChat(id){
+
+const chat=chats.find(c=>c.id===id);
+
+if(!chat)return;
+
+currentChat=chat.messages;
+
+localStorage.setItem("active_chat",id);
+
+const area=document.getElementById("chatArea");
+
+area.innerHTML="";
+
+currentChat.forEach(message=>{
+
+addMessage(
+message.content,
+message.role==="user"?"user":"ai"
+);
+
+});
+
+document.getElementById("sidebar").classList.remove("open");
+
+}
+
+/* SIDEBAR */
+
+function toggleSidebar(){
+
+document.getElementById("sidebar").classList.toggle("open");
+
+}
+
+/* VOICE INPUT */
+
+function voiceInput(){
+
+const SpeechRecognition =
+window.SpeechRecognition ||
+window.webkitSpeechRecognition;
+
+if(!SpeechRecognition){
+
+alert("Voice input is not supported in this browser.");
+
+return;
+
+}
+
+const recognition=new SpeechRecognition();
+
+recognition.lang="ur-PK";
+
+recognition.onresult=function(event){
+
+document.getElementById("prompt").value=
+event.results[0][0].transcript;
+
+};
+
+recognition.start();
+
+}
+
+/* AUTO START */
+
+window.onload=function(){
+
+startApp();
+
+};
+
+</script>
+
+</body>
+</html>
